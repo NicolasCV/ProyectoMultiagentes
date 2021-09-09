@@ -510,16 +510,25 @@ class FloorGrid(Model):
         self.schedule.step()
 
         gridInfo = []
+        tempInfo = []
 
         for cell in self.grid.coord_iter():
             cell_content, x, y = cell
             for content in cell_content:
                 if isinstance(content, Car):
-                    gridInfo.append([0, content.unique_id, x, y])
+                    temp = ''
+                    if content.direction == way['down']:
+                        temp = 'down'
+                    elif content.direction == way['right']:
+                        temp = 'right'
+                    elif content.direction == way['left']:
+                        temp ='left'
+                    elif content.direction == way['up']:
+                        temp = 'up'
+                    gridInfo.append([0, str(content.unique_id[0])+str(content.unique_id[1]), y, x, True, temp])
                 elif isinstance(content, Semaforo):
-                    gridInfo.append([1, content.unique_id, content.active, 0])
-                else:
-                    gridInfo.append([-1, 0, 0, 0])
+                    tempInfo.append([1, str(content.unique_id[0])+str(content.unique_id[1]), 0, 0, content.active, 'NULL'])
+        gridInfo += tempInfo
         return gridInfo
 
 # Registramos el tiempo de inicio y corremos el modelo
@@ -535,7 +544,9 @@ def gridToJSON(grid):
             "type" : coor[0],
             "id" : coor[1],
             "x" : coor[2],
-            "y" : coor[3]
+            "y" : coor[3],
+            "active" : coor[4],
+            "direction" : coor[5]
         }
         gridDICT.append(coor_)
     return json.dumps(gridDICT)
@@ -562,26 +573,10 @@ class Server(BaseHTTPRequestHandler):
         logging.info("POST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
                      str(self.path), str(self.headers), json.dumps(post_data))
         
-        '''
-        x = post_data['x'] * 2
-        y = post_data['y'] * 2
-        z = post_data['z'] * 2
-        
-        position = {
-            "x" : x,
-            "y" : y,
-            "z" : z
-        }
-
-        self._set_response()
-        #self.wfile.write("POST request for {}".format(self.path).encode('utf-8'))
-        self.wfile.write(str(position).encode('utf-8'))
-        '''
-        
         gridInfo = model.step()
-        print(gridInfo)
+        #print(gridInfo)
         self._set_response()
-        resp = "{\"data\":" + gridToJSON(gridInfo) + "}"
+        resp = "{\"Items\":" + gridToJSON(gridInfo) + "}"
         #print(resp)
         self.wfile.write(resp.encode('utf-8'))
 
@@ -591,8 +586,14 @@ def run(server_class=HTTPServer, handler_class=Server, port=8585):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     logging.info("Starting httpd...\n") # HTTPD is HTTP Daemon!
+
+    
+    f = open("output.txt", "a")
+    print(gridToJSON(model.step()), file=f)
+    f.close()
     try:
         httpd.serve_forever()
+
     except KeyboardInterrupt:   # CTRL+C stops the server
         pass
     httpd.server_close()
@@ -605,3 +606,4 @@ if __name__ == '__main__':
         run(port=int(argv[1]))
     else:
         run()
+
