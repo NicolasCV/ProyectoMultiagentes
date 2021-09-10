@@ -527,7 +527,7 @@ class FloorGrid(Model):
                         temp = 'up'
                     gridInfo.append([0, str(content.unique_id[0])+str(content.unique_id[1]), y, x, True, temp])
                 elif isinstance(content, Semaforo):
-                    tempInfo.append([1, str(content.unique_id[0])+str(content.unique_id[1]), 0, 0, content.active, 'NULL'])
+                    tempInfo.append([1, str(content.unique_id[0])+str(content.unique_id[1]), y, x, content.active, 'NULL'])
         gridInfo += tempInfo
         return gridInfo
 
@@ -588,9 +588,9 @@ def run(server_class=HTTPServer, handler_class=Server, port=8585):
     logging.info("Starting httpd...\n") # HTTPD is HTTP Daemon!
 
     
-    f = open("output.txt", "a")
-    print(gridToJSON(model.step()), file=f)
-    f.close()
+    # f = open("output.txt", "a")
+    # print(gridToJSON(model.step()), file=f)
+    # f.close()
     try:
         httpd.serve_forever()
 
